@@ -2,6 +2,7 @@ import { useState, useRef, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Send, Bot, Sparkles } from 'lucide-react'
 import { subscribeToChats, saveChatMessage, getChatHistory } from '../lib/db'
+import { sendChatMessageApi } from '../lib/api'
 
 const welcomeMessages = [
   { id: 'w1', role: 'ai', text: "Hi! I'm your MindWell AI companion 🌟 How are you feeling today?" },
@@ -69,17 +70,19 @@ export default function ChatBot({ user, authUserId }) {
       await saveChatMessage(authUserId, 'user', text)
     }
 
-    // Placeholder AI response (Gemini API will replace this)
-    setTimeout(async () => {
-      const aiText = aiResponses[Math.floor(Math.random() * aiResponses.length)]
-      setMessages(m => [...m, { id: Date.now(), role: 'ai', text: aiText }])
+    // Call FastAPI backend for Gemini + DistilBERT + DB saving
+    try {
+      const response = await sendChatMessageApi(text, messages);
+      const data = response.data;
+      
+      // Update the UI with AI response (optimistic update since we no longer rely on realtime for this)
+      setMessages(m => [...m, { id: Date.now() + 1, role: 'ai', text: data.ai_reply }]);
+    } catch (err) {
+      console.error("ChatBot FastAPI error:", err)
+      setMessages(m => [...m, { id: Date.now() + 1, role: 'ai', text: "I'm having a little trouble reaching my backend right now. 💙" }]);
+    } finally {
       setTyping(false)
-
-      // Save AI response to Supabase
-      if (authUserId) {
-        await saveChatMessage(authUserId, 'ai', aiText)
-      }
-    }, 1500)
+    }
   }
 
   return (

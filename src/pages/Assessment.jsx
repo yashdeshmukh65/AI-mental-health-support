@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Brain, ChevronRight, Sparkles, AlertCircle } from 'lucide-react'
-import { saveAssessment } from '../lib/db'
+import { submitAssessmentApi } from '../lib/api'
 
 const minorQuestions = [
   { id: 1, text: "How often do you feel stressed because of studies, exams, or school pressure?", type: 'emoji', options: ['😌 Rarely', '😐 Sometimes', '😟 Often', '😰 Always'] },
@@ -42,11 +42,11 @@ export default function Assessment({ user, authUserId, onComplete }) {
       setAnalyzing(true)
       setSaveError('')
 
-      // Save assessment to Supabase
-      // BERT sentiment analysis will be integrated here later — answers will be passed to the model
-      const { error } = await saveAssessment(authUserId, user.category, updatedAnswers)
-      if (error) {
-        console.error('Assessment save error:', error.message)
+      // Save assessment via FastAPI backend
+      try {
+        await submitAssessmentApi(user.category, updatedAnswers)
+      } catch (error) {
+        console.error('Assessment save error:', error)
         setSaveError(error.message)
         // Still proceed to dashboard even if save fails
       }

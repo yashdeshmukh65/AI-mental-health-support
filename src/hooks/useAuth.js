@@ -29,10 +29,16 @@ export function useAuth() {
 
   async function fetchProfile(userId) {
     setLoading(true)
-    const { data, error } = await getUserProfile(userId)
-    console.log("Fetch Profile Result:", { data, error })
-    setProfile(data)
-    setLoading(false)
+    try {
+      const { data, error } = await getUserProfile(userId)
+      console.log("Fetch Profile Result:", { data, error })
+      setProfile(data)
+    } catch (err) {
+      console.error("Error fetching profile:", err)
+      setProfile(null)
+    } finally {
+      setLoading(false)
+    }
   }
 
   return { authUser, profile, loading, refetchProfile: () => authUser && fetchProfile(authUser.id) }

@@ -53,7 +53,7 @@ export default function Registration({ onRegistered, onTherapistLogin }) {
 }
 
 // ─── SIGN UP ──────────────────────────────────────────────────────────────────
-function SignUpForm({ onRegistered }) {
+function SignUpForm({ onRegistered, setIsRegistering }) {
   const [step, setStep] = useState(0)
   const [form, setForm] = useState({ name: '', email: '', phone: '', guardianPhone: '', dob: '', password: '' })
   const [errors, setErrors] = useState({})
@@ -86,6 +86,7 @@ function SignUpForm({ onRegistered }) {
     if (!validate()) return
     setLoading(true)
     setServerError('')
+    if (setIsRegistering) setIsRegistering(true)
 
     const age = new Date().getFullYear() - new Date(form.dob).getFullYear()
     const category = age <= 18 ? 'minor' : 'adult'
@@ -94,18 +95,30 @@ function SignUpForm({ onRegistered }) {
     const { data: authData, error: authError } = await signUp(form.email, form.password)
     console.log("Supabase Auth Response:", { authData, authError })
     
-    if (authError) { setServerError(authError.message); setLoading(false); return }
+    if (authError) { 
+      setServerError(authError.message); 
+      setLoading(false); 
+      if (setIsRegistering) setIsRegistering(false); 
+      return 
+    }
 
     const userId = authData?.user?.id
     if (!userId) { 
       setServerError('Signup failed. This email might already be registered, or check console for details.'); 
       setLoading(false); 
+      if (setIsRegistering) setIsRegistering(false);
       return 
     }
 
     // 2. Save profile to users table
     const { error: profileError } = await upsertUserProfile(userId, { ...form, category })
-    if (profileError) { setServerError(profileError.message); setLoading(false); return }
+    if (profileError) { 
+      console.error("Profile Save Error:", profileError)
+      setServerError(`Database Error: ${profileError.message || profileError.details || 'Failed to save profile'}`); 
+      setLoading(false); 
+      if (setIsRegistering) setIsRegistering(false);
+      return 
+    }
 
     setLoading(false)
     onRegistered({ ...form, age, category })

@@ -80,6 +80,20 @@ export async function saveTaskProgress(userId, taskId, completed, xpReward = 10)
     if (streakData) {
       await supabase.from('streaks').update({ total_xp: (streakData.total_xp || 0) + xpReward }).eq('user_id', userId)
     }
+    
+    // Increment Wellness Score slightly for completing a task
+    const { data: scoreData } = await supabase.from('wellness_scores').select('*').eq('user_id', userId).single()
+    if (scoreData) {
+      const newOverall = Math.min(100, (scoreData.overall_score || 0) + 2)
+      const newStability = Math.min(100, (scoreData.emotional_stability || 0) + 1)
+      const newRecovery = Math.min(100, (scoreData.recovery_progress || 0) + 2)
+      await supabase.from('wellness_scores').update({
+        overall_score: newOverall,
+        emotional_stability: newStability,
+        recovery_progress: newRecovery,
+        updated_at: new Date().toISOString()
+      }).eq('user_id', userId)
+    }
   }
   return { data, error }
 }
