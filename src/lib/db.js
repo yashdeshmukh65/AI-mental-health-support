@@ -69,6 +69,16 @@ export function subscribeToChats(userId, callback) {
 }
 
 // ─── WELLNESS PROGRESS & STREAKS ─────────────────────────────────────────────
+export async function awardPoints(userId, amount) {
+  const { data: streakData } = await supabase.from('streaks').select('*').eq('user_id', userId).single()
+  if (streakData) {
+    await supabase.from('streaks').update({ total_xp: (streakData.total_xp || 0) + amount }).eq('user_id', userId)
+  } else {
+    // If no streak exists, create one
+    await supabase.from('streaks').insert({ user_id: userId, current_streak: 1, total_xp: amount, last_activity_date: new Date().toISOString().split('T')[0] })
+  }
+}
+
 export async function saveTaskProgress(userId, taskId, completed, xpReward = 10) {
   const { data, error } = await supabase.from('wellness_progress').upsert({
     user_id: userId, task_id: taskId, completed, updated_at: new Date().toISOString()
@@ -76,10 +86,7 @@ export async function saveTaskProgress(userId, taskId, completed, xpReward = 10)
 
   if (completed && !error) {
     // Update XP in streaks table
-    const { data: streakData } = await supabase.from('streaks').select('*').eq('user_id', userId).single()
-    if (streakData) {
-      await supabase.from('streaks').update({ total_xp: (streakData.total_xp || 0) + xpReward }).eq('user_id', userId)
-    }
+    await awardPoints(userId, xpReward)
     
     // Increment Wellness Score slightly for completing a task
     const { data: scoreData } = await supabase.from('wellness_scores').select('*').eq('user_id', userId).single()
@@ -117,7 +124,10 @@ export async function saveMoodLog(userId, day, note) {
     user_id: userId, day, note, mood_score: moodScore, stress_score: stressScore, updated_at: new Date().toISOString()
   }, { onConflict: 'user_id,day' }).select().single()
 
-  if (!error) await calculateWellnessScore(userId)
+  if (!error) {
+    await awardPoints(userId, 10)
+    await calculateWellnessScore(userId)
+  }
   return { data, error }
 }
 export async function getMoodLogs(userId) {

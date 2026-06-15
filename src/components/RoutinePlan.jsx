@@ -77,9 +77,7 @@ export default function RoutinePlan({ authUserId }) {
       // 2. Load Progress
       const { data: pData } = await getWellnessProgress(authUserId)
       if (pData) {
-        const c = {}
-        pData.forEach(p => { c[p.task_id] = p.completed })
-        setCompleted(c)
+        setCompleted(pData)
       }
 
       // 3. Load Moods

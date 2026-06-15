@@ -1,7 +1,28 @@
 import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
-import { TrendingUp, Zap, AlertTriangle, Heart, Activity, Target, Flame, Star, Bell, Brain } from 'lucide-react'
+import { TrendingUp, Zap, AlertTriangle, Heart, Activity, Target, Flame, Star, Bell, Brain, Trophy, Gamepad2 } from 'lucide-react'
 import { getWellnessScore, subscribeToWellnessScore, getAnomalyAlerts, subscribeToAnomalyAlerts, getStreaks } from '../lib/db'
+
+// Progress Levels
+const levels = [
+  { id: 1, title: 'Beginner', max: 100, color: 'text-slate-400', bg: 'bg-slate-500/20' },
+  { id: 2, title: 'Growing Mind', max: 300, color: 'text-blue-400', bg: 'bg-blue-500/20' },
+  { id: 3, title: 'Wellness Explorer', max: 600, color: 'text-purple-400', bg: 'bg-purple-500/20' },
+  { id: 4, title: 'Mind Champion', max: 1000, color: 'text-emerald-400', bg: 'bg-emerald-500/20' },
+  { id: 5, title: 'Wellness Master', max: Infinity, color: 'text-amber-400', bg: 'bg-amber-500/20' },
+]
+
+const getLevelInfo = (xp) => {
+  for (let i = 0; i < levels.length; i++) {
+    if (xp <= levels[i].max) {
+      const currentLevel = levels[i]
+      const prevMax = i > 0 ? levels[i - 1].max : 0
+      const progress = ((xp - prevMax) / (currentLevel.max - prevMax)) * 100
+      return { ...currentLevel, progress: Math.min(100, Math.max(0, progress)), nextMax: currentLevel.max }
+    }
+  }
+  return { ...levels[levels.length - 1], progress: 100, nextMax: Infinity }
+}
 
 export default function DashboardHome({ user }) {
   const [scoreData, setScoreData] = useState(null)
@@ -43,6 +64,9 @@ export default function DashboardHome({ user }) {
     { label: 'Current Wellness Score', value: overall, icon: Star, color: '#60a5fa' },
     { label: 'Therapy Goal Progress', value: recovery, icon: TrendingUp, color: '#34d399' },
   ]
+
+  const levelInfo = getLevelInfo(streakData.total_xp || 0)
+  const behavioralInsight = streakData.current_streak > 3 ? "Consistent Engagement" : streakData.total_xp > 100 ? "Focus Improving" : "Needs More Practice"
 
   return (
     <div className="space-y-6">
@@ -155,6 +179,49 @@ export default function DashboardHome({ user }) {
             </div>
             <div className="text-sm font-medium text-white">Continuous Sentiment Monitoring</div>
             <div className="text-xs text-slate-400 mt-1">Every message sent to the AI updates your burnout risk in real-time.</div>
+          </div>
+        </motion.div>
+
+        {/* Gamification & Behavioral Insights */}
+        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.4 }} className="glass rounded-2xl p-6 lg:col-span-2 flex flex-col md:flex-row gap-6">
+          {/* Level Progress */}
+          <div className="flex-1 flex items-center gap-4 border-b md:border-b-0 md:border-r border-white/5 pb-4 md:pb-0 md:pr-6">
+            <div className={`w-16 h-16 rounded-full flex items-center justify-center flex-shrink-0 ${levelInfo.bg}`}>
+              <Trophy size={32} className={levelInfo.color} />
+            </div>
+            <div className="flex-1">
+              <h3 className="font-bold text-white text-lg flex items-center gap-2">
+                Level {levelInfo.id}: {levelInfo.title}
+              </h3>
+              <p className="text-slate-400 text-sm mb-3">
+                <span className="font-bold text-amber-400">{streakData.total_xp || 0}</span> / {levelInfo.nextMax === Infinity ? 'MAX' : levelInfo.nextMax} XP
+              </p>
+              <div className="h-2 bg-slate-800 rounded-full overflow-hidden">
+                <motion.div 
+                  initial={{ width: 0 }} animate={{ width: `${levelInfo.progress}%` }} 
+                  className={`h-full bg-gradient-to-r from-blue-500 to-${levelInfo.color.split('-')[1]}-400 rounded-full`} 
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Activity Streak & Game Insight */}
+          <div className="flex-1 flex flex-col justify-center gap-3">
+            <div className="flex items-center gap-3 bg-slate-800/50 rounded-xl p-3 border border-slate-700">
+              <Flame size={20} className="text-orange-400" />
+              <div>
+                <div className="text-sm font-bold text-white">{streakData.current_streak || 0} Day Streak</div>
+                <div className="text-xs text-slate-400">Keep it up!</div>
+              </div>
+            </div>
+            
+            <div className="flex items-center gap-3 bg-slate-800/50 rounded-xl p-3 border border-slate-700">
+              <Gamepad2 size={20} className="text-purple-400" />
+              <div>
+                <div className="text-xs text-slate-400">Game Behavior Insight</div>
+                <div className="text-sm font-bold text-purple-300">{behavioralInsight}</div>
+              </div>
+            </div>
           </div>
         </motion.div>
       </div>

@@ -47,4 +47,9 @@ export const submitDailyFeedbackApi = async (feedbackText, day = 1) => {
   return response.data
 }
 
+export const submitGameBehaviorApi = async (gameType, telemetry) => {
+  const response = await api.post('/wellness/game-behavior', { game_type: gameType, telemetry })
+  return response.data
+}
+
 export default api;

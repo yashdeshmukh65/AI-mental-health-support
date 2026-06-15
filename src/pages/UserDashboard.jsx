@@ -1,15 +1,20 @@
 import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { LayoutDashboard, Gamepad2, Calendar, UserCheck, Settings, LogOut, Brain, Menu, X } from 'lucide-react'
+import { LayoutDashboard, Gamepad2, Calendar, UserCheck, Settings, LogOut, Brain, Menu, X, Activity } from 'lucide-react'
 import DashboardHome from '../components/DashboardHome'
 import MindGames from '../components/MindGames'
 import RoutinePlan from '../components/RoutinePlan'
 import TherapistList from '../components/TherapistList'
 import SettingsPage from '../components/SettingsPage'
 import ChatBot from '../components/ChatBot'
+import PlatformImpact from '../components/PlatformImpact'
+import Rewards from '../components/Rewards'
+import { Trophy } from 'lucide-react'
 
 const navItems = [
+  { id: 'impact', label: 'Platform Impact', icon: Activity },
   { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
+  { id: 'rewards', label: 'Rewards', icon: Trophy },
   { id: 'games', label: 'Mind Games', icon: Gamepad2 },
   { id: 'routine', label: '7-Day Routine', icon: Calendar },
   { id: 'therapist', label: 'Therapist', icon: UserCheck },
@@ -17,11 +22,13 @@ const navItems = [
 ]
 
 export default function UserDashboard({ user, authUserId, onLogout }) {
-  const [active, setActive] = useState('dashboard')
+  const [active, setActive] = useState('impact')
   const [mobileOpen, setMobileOpen] = useState(false)
 
   const pageMap = {
-    dashboard: <DashboardHome user={user} />,
+    impact: <PlatformImpact />,
+    dashboard: <DashboardHome user={user} authUserId={authUserId} />,
+    rewards: <Rewards authUserId={authUserId} />,
     games: <MindGames />,
     routine: <RoutinePlan authUserId={authUserId} />,
     therapist: <TherapistList authUserId={authUserId} />,

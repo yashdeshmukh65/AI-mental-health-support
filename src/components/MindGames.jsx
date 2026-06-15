@@ -1,4 +1,5 @@
-import { useState } from 'react'
+import { useState, useEffect, useRef } from 'react'
+import { submitGameBehaviorApi } from '../lib/api'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Brain, Wind, Timer, Puzzle, Smile, X, RotateCcw } from 'lucide-react'
 
@@ -81,10 +82,27 @@ function MemoryGame() {
   const [deck, setDeck] = useState(cards)
   const [selected, setSelected] = useState([])
 
+  const startTime = useRef(Date.now())
+  const moves = useRef(0)
+  const isSolved = deck.every(c => c.matched)
+  const solvedRef = useRef(false)
+  solvedRef.current = isSolved
+
+  useEffect(() => {
+    return () => {
+      submitGameBehaviorApi('Memory Match', {
+        time_taken_seconds: (Date.now() - startTime.current) / 1000,
+        total_moves: moves.current,
+        completed: solvedRef.current
+      }).catch(console.error)
+    }
+  }, [])
+
   const flip = (id) => {
     if (selected.length === 2) return
     const card = deck.find(c => c.id === id)
     if (card.flipped || card.matched) return
+    moves.current += 1
     const newDeck = deck.map(c => c.id === id ? { ...c, flipped: true } : c)
     setDeck(newDeck)
     const newSelected = [...selected, id]
@@ -127,6 +145,17 @@ function BreathingGame() {
   const phases = { inhale: { label: 'Inhale', duration: 4, color: '#60a5fa' }, hold: { label: 'Hold', duration: 4, color: '#a78bfa' }, exhale: { label: 'Exhale', duration: 6, color: '#34d399' } }
   const phaseOrder = ['inhale', 'hold', 'exhale']
 
+  const startTime = useRef(Date.now())
+  
+  useEffect(() => {
+    return () => {
+      submitGameBehaviorApi('Breathing Game', {
+        time_taken_seconds: (Date.now() - startTime.current) / 1000,
+        completed: true 
+      }).catch(console.error)
+    }
+  }, [])
+
   const start = () => {
     let i = 0
     setPhase('inhale')
@@ -168,6 +197,17 @@ function FocusTimer() {
   const [running, setRunning] = useState(false)
   const [intervalId, setIntervalId] = useState(null)
 
+  const startTime = useRef(Date.now())
+  
+  useEffect(() => {
+    return () => {
+      submitGameBehaviorApi('Focus Timer', {
+        time_taken_seconds: (Date.now() - startTime.current) / 1000,
+        completed: false
+      }).catch(console.error)
+    }
+  }, [])
+
   const toggle = () => {
     if (running) { clearInterval(intervalId); setRunning(false) }
     else {
@@ -207,7 +247,24 @@ function CalmPuzzle() {
   const solved = Array.from({ length: size * size }, (_, i) => i)
   const [tiles, setTiles] = useState(() => [...solved].sort(() => Math.random() - 0.5))
 
+  const startTime = useRef(Date.now())
+  const moves = useRef(0)
+  const isSolved = tiles.join(',') === solved.join(',')
+  const solvedRef = useRef(false)
+  solvedRef.current = isSolved
+
+  useEffect(() => {
+    return () => {
+      submitGameBehaviorApi('Calm Puzzle', {
+        time_taken_seconds: (Date.now() - startTime.current) / 1000,
+        total_moves: moves.current,
+        completed: solvedRef.current
+      }).catch(console.error)
+    }
+  }, [])
+
   const move = (i) => {
+    moves.current += 1
     const empty = tiles.indexOf(0)
     const row = Math.floor(i / size), col = i % size
     const eRow = Math.floor(empty / size), eCol = empty % size
@@ -218,7 +275,6 @@ function CalmPuzzle() {
     }
   }
 
-  const isSolved = tiles.join(',') === solved.join(',')
 
   return (
     <div className="text-center">
@@ -244,6 +300,22 @@ function EmojiMatch() {
   const [matched, setMatched] = useState([])
   const [score, setScore] = useState(0)
 
+  const startTime = useRef(Date.now())
+  const mistakes = useRef(0)
+  const scoreRef = useRef(0)
+  scoreRef.current = score
+
+  useEffect(() => {
+    return () => {
+      submitGameBehaviorApi('Emoji Match', {
+        time_taken_seconds: (Date.now() - startTime.current) / 1000,
+        mistakes: mistakes.current,
+        score: scoreRef.current,
+        completed: scoreRef.current === pairs.length
+      }).catch(console.error)
+    }
+  }, [pairs.length])
+
   const shuffledEmojis = pairs.map(p => p[0]).sort(() => Math.random() - 0.5)
   const shuffledWords = pairs.map(p => p[1]).sort(() => Math.random() - 0.5)
 
@@ -251,6 +323,7 @@ function EmojiMatch() {
     if (!selected) { setSelected({ item, type }); return }
     const pair = pairs.find(p => (type === 'word' ? p[0] === selected.item && p[1] === item : p[1] === selected.item && p[0] === item))
     if (pair) { setMatched(m => [...m, pair[0], pair[1]]); setScore(s => s + 1) }
+    else { mistakes.current += 1 }
     setSelected(null)
   }
 

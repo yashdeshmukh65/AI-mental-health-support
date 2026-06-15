@@ -3,13 +3,19 @@ from pydantic import BaseModel
 from backend.core.security import get_current_user
 from backend.db.supabase import supabase
 from backend.services.ai_sentiment import analyze_sentiment
+from backend.services.ai_behavior import analyze_game_behavior
 from datetime import datetime
+from typing import Dict, Any
 
 router = APIRouter()
 
 class DailyFeedback(BaseModel):
     feedback_text: str
     day: int = 1
+
+class GameBehaviorData(BaseModel):
+    game_type: str
+    telemetry: Dict[str, Any]
 
 @router.get("/routine")
 async def get_routine(user = Depends(get_current_user)):
@@ -109,3 +115,54 @@ async def submit_daily_feedback(feedback: DailyFeedback, user = Depends(get_curr
         }
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+@router.post("/game-behavior")
+async def submit_game_behavior(data: GameBehaviorData, user = Depends(get_current_user)):
+    """
+    Analyzes telemetry from mini-games and dynamically updates wellness scores.
+    """
+    try:
+        # Analyze using Gemini
+        ai_scores = analyze_game_behavior(data.game_type, data.telemetry)
+        ai_stress = ai_scores.get("stress_score", 50)
+        ai_mood = ai_scores.get("mood_score", 50)
+
+        # Update wellness score
+        current_score_resp = supabase.table("wellness_scores").select("*").eq("user_id", user.id).execute()
+        
+        if current_score_resp.data:
+            current_score = current_score_resp.data[0]
+            # Blend the current score with the new AI feedback (70% old, 30% new)
+            new_overall = int((current_score.get('overall_score', 80) * 0.7) + (ai_mood * 0.3))
+            
+            # Update burnout risk if stress is high
+            burnout_risk = current_score.get("burnout_risk", "Low")
+            if ai_stress > 75:
+                burnout_risk = "High"
+            elif ai_stress > 50:
+                burnout_risk = "Medium"
+
+            supabase.table("wellness_scores").update({
+                "overall_score": new_overall,
+                "burnout_risk": burnout_risk,
+                "emotional_stability": ai_mood,
+                "updated_at": datetime.utcnow().isoformat()
+            }).eq("user_id", user.id).execute()
+
+        # Update XP in streaks
+        streak_resp = supabase.table("streaks").select("*").eq("user_id", user.id).execute()
+        if streak_resp.data:
+            current_xp = streak_resp.data[0].get("total_xp", 0)
+            supabase.table("streaks").update({"total_xp": current_xp + 15}).eq("user_id", user.id).execute()
+        else:
+            supabase.table("streaks").insert({
+                "user_id": user.id, 
+                "current_streak": 1, 
+                "total_xp": 15, 
+                "last_activity_date": datetime.utcnow().strftime("%Y-%m-%d")
+            }).execute()
+
+        return {"success": True, "ai_feedback": ai_scores}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
