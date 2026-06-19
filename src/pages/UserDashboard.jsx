@@ -114,7 +114,9 @@ export default function UserDashboard({ user, authUserId, onLogout }) {
             <Menu size={22} />
           </button>
           <div className="flex items-center gap-2">
-            <Brain size={18} className="text-blue-400" />
+            <div className="w-7 h-7 rounded-lg bg-white flex items-center justify-center overflow-hidden">
+              <img src="/logo.png" alt="MindWell Logo" className="w-full h-full object-cover" />
+            </div>
             <span className="font-bold gradient-text">MindWell</span>
           </div>
           <div className="flex items-center gap-3">
@@ -172,8 +174,8 @@ function SidebarContent({ active, setActive, onLogout, user }) {
       {/* Brand */}
       <div className="p-5 border-b border-white/5 flex-shrink-0">
         <div className="flex items-center gap-3">
-          <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center">
-            <Brain size={18} className="text-white" />
+          <div className="w-10 h-10 rounded-xl bg-white flex items-center justify-center overflow-hidden border border-white/10 shadow-lg shadow-blue-500/10">
+            <img src="/logo.png" alt="MindWell Logo" className="w-full h-full object-cover" />
           </div>
           <div>
             <div className="font-bold text-white leading-tight">MindWell</div>

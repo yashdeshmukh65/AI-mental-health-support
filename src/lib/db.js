@@ -2,7 +2,17 @@ import { supabase } from './supabase'
 
 // ─── AUTH ────────────────────────────────────────────────────────────────────
 export async function signUp(email, password) {
-  return await supabase.auth.signUp({ email, password })
+  const timeoutPromise = new Promise((_, reject) => 
+    setTimeout(() => reject(new Error('Signup request timed out')), 15000)
+  )
+  try {
+    return await Promise.race([
+      supabase.auth.signUp({ email, password }),
+      timeoutPromise
+    ])
+  } catch (error) {
+    return { data: null, error }
+  }
 }
 export async function signIn(email, password) {
   return await supabase.auth.signInWithPassword({ email, password })
@@ -17,15 +27,23 @@ export async function getSession() {
 
 // ─── USERS TABLE ─────────────────────────────────────────────────────────────
 export async function upsertUserProfile(userId, profile) {
-  return await supabase.from('users').upsert({
-    id: userId,
-    full_name: profile.name,
-    email: profile.email,
-    phone: profile.phone,
-    guardian_number: profile.guardianPhone,
-    dob: profile.dob,
-    category: profile.category,
-  }, { onConflict: 'id' }).select().single()
+  const timeoutPromise = new Promise((_, reject) => setTimeout(() => reject(new Error('Profile upsert timed out')), 15000))
+  try {
+    return await Promise.race([
+      supabase.from('users').upsert({
+        id: userId,
+        full_name: profile.name,
+        email: profile.email,
+        phone: profile.phone,
+        guardian_number: profile.guardianPhone,
+        dob: profile.dob,
+        category: profile.category,
+      }, { onConflict: 'id' }).select().single(),
+      timeoutPromise
+    ])
+  } catch (error) {
+    return { data: null, error }
+  }
 }
 export async function getUserProfile(userId) {
   return await supabase.from('users').select('*').eq('id', userId).single()

@@ -133,7 +133,7 @@ function LoadingScreen({ onClearData }) {
           <motion.div animate={{ rotate: 360 }} transition={{ duration: 1.5, repeat: Infinity, ease: 'linear' }}
             className="absolute inset-0 rounded-full border-2 border-transparent border-t-blue-500 border-r-purple-500" />
           <div className="absolute inset-0 flex items-center justify-center">
-            <Brain size={24} className="text-blue-400" />
+            <img src="/logo.png" alt="Logo" className="w-6 h-6 object-cover" />
           </div>
         </div>
         <p className="text-slate-400 text-sm">Loading MindWell...</p>

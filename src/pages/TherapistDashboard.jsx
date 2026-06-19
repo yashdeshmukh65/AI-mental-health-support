@@ -30,7 +30,9 @@ export default function TherapistDashboard({ user, authUserId, onLogout }) {
         {/* Logo */}
         <div className="p-6 border-b border-white/5">
           <div className="flex items-center gap-2 mb-4">
-            <Brain size={28} className="text-blue-400" />
+            <div className="w-8 h-8 rounded-lg bg-white flex items-center justify-center overflow-hidden shadow-lg shadow-teal-500/10 border border-white/10">
+              <img src="/logo.png" alt="MindWell Logo" className="w-full h-full object-cover" />
+            </div>
             <span className="text-xl font-bold gradient-text">MindWell</span>
           </div>
           <div className="flex items-center gap-3 mt-4">

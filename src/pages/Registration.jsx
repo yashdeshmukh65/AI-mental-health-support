@@ -11,17 +11,33 @@ export default function Registration({ onRegistered }) {
   const [role, setRole] = useState('user') // 'user' | 'therapist'
 
   return (
-    <div className="min-h-screen gradient-bg flex items-center justify-center p-4 relative overflow-hidden">
-      <div className="absolute top-20 left-20 w-72 h-72 bg-blue-500/10 rounded-full blur-3xl" />
-      <div className="absolute bottom-20 right-20 w-96 h-96 bg-purple-500/10 rounded-full blur-3xl" />
-      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-64 h-64 bg-teal-500/5 rounded-full blur-3xl" />
+    <div className="min-h-screen flex items-center justify-center p-4 relative overflow-hidden bg-slate-950">
+      {/* Background Image */}
+      <div 
+        className="absolute inset-0 z-0 transition-opacity duration-1000"
+        style={{
+          backgroundImage: 'url(/bg_3.jpeg)',
+          backgroundSize: 'cover',
+          backgroundPosition: 'center',
+          filter: 'blur(6px)',
+          transform: 'scale(1.05)' // Prevents blurred edge bleed
+        }}
+      />
+      
+      {/* Dark Gradient Overlay (75-85% opacity) */}
+      <div className="absolute inset-0 z-0 bg-gradient-to-br from-slate-950/90 via-slate-900/80 to-slate-950/85" />
+      
+      {/* Original Abstract Orbs (Lowered opacity slightly to fit the new bg) */}
+      <div className="absolute top-20 left-20 w-72 h-72 bg-blue-500/20 rounded-full blur-3xl z-0" />
+      <div className="absolute bottom-20 right-20 w-96 h-96 bg-purple-500/20 rounded-full blur-3xl z-0" />
+      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-64 h-64 bg-teal-500/10 rounded-full blur-3xl z-0" />
 
       <div className="w-full max-w-md relative z-10">
         {/* Logo */}
         <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} className="text-center mb-8">
           <div className="flex items-center justify-center gap-2 mb-3">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center">
-              <Brain size={20} className="text-white" />
+            <div className="w-12 h-12 rounded-xl bg-white flex items-center justify-center overflow-hidden shadow-lg shadow-blue-500/10">
+              <img src="/logo.png" alt="MindWell Logo" className="w-full h-full object-cover" />
             </div>
             <span className="text-2xl font-bold gradient-text">MindWell</span>
           </div>
@@ -63,6 +79,7 @@ function SignUpForm({ onRegistered, setIsRegistering, role }) {
   const [errors, setErrors] = useState({})
   const [loading, setLoading] = useState(false)
   const [showPw, setShowPw] = useState(false)
+  const [debugMsg, setDebugMsg] = useState('')
 
   const update = (k, v) => { setForm(f => ({ ...f, [k]: v })); setErrors(e => ({ ...e, [k]: '' })) }
 
@@ -90,59 +107,73 @@ function SignUpForm({ onRegistered, setIsRegistering, role }) {
   }
 
   const next = () => { if (validate()) setStep(s => s + 1) }
-  const back = () => { setStep(s => s - 1); setServerError('') }
+  const back = () => { setStep(s => s - 1) }
   
   const totalSteps = role === 'user' ? regSteps.length : 2;
 
   const submit = async () => {
     if (!validate()) return
     setLoading(true)
-    setServerError('')
+    setDebugMsg('Starting signup process...')
     if (setIsRegistering) setIsRegistering(true)
 
-    const age = new Date().getFullYear() - new Date(form.dob).getFullYear()
-    const category = age <= 18 ? 'minor' : 'adult'
+    try {
+      const age = new Date().getFullYear() - new Date(form.dob).getFullYear()
+      const category = age <= 18 ? 'minor' : 'adult'
 
-    // 1. Create Supabase auth user
-    const { data: authData, error: authError } = await signUp(form.email, form.password)
-    console.log("Supabase Auth Response:", { authData, authError })
-    
-    if (authError) { 
-      toast.error(authError.message); 
-      setLoading(false); 
-      if (setIsRegistering) setIsRegistering(false); 
-      return 
-    }
+      // 1. Create Supabase auth user
+      setDebugMsg('Calling supabase.auth.signUp...')
+      const { data: authData, error: authError } = await signUp(form.email, form.password)
+      console.log("Supabase Auth Response:", { authData, authError })
+      setDebugMsg(`SignUp returned. Error: ${authError?.message || 'none'}`)
+      
+      if (authError) { 
+        toast.error(authError.message); 
+        setLoading(false); 
+        if (setIsRegistering) setIsRegistering(false); 
+        return 
+      }
 
-    const userId = authData?.user?.id
-    if (!userId) { 
-      toast.error('Signup failed. This email might already be registered.'); 
-      setLoading(false); 
-      if (setIsRegistering) setIsRegistering(false);
-      return 
-    }
+      const userId = authData?.user?.id
+      if (!userId) { 
+        setDebugMsg('No userId returned from signUp')
+        toast.error('Signup failed. This email might already be registered.'); 
+        setLoading(false); 
+        if (setIsRegistering) setIsRegistering(false);
+        return 
+      }
 
-    // 2. Save profile
-    let profileError = null;
-    if (role === 'user') {
-      const res = await upsertUserProfile(userId, { ...form, category })
-      profileError = res.error
-    } else {
-      const res = await upsertTherapistProfile(userId, { ...form })
-      profileError = res.error
-    }
-    
-    if (profileError) { 
-      console.error("Profile Save Error:", profileError)
-      toast.error(`Database Error: ${profileError.message || profileError.details || 'Failed to save profile'}`); 
-      setLoading(false); 
-      if (setIsRegistering) setIsRegistering(false);
-      return 
-    }
+      // 2. Save profile
+      setDebugMsg('Calling upsert profile...')
+      let profileError = null;
+      if (role === 'user') {
+        const res = await upsertUserProfile(userId, { ...form, category })
+        profileError = res?.error
+      } else {
+        const res = await upsertTherapistProfile(userId, { ...form })
+        profileError = res?.error
+      }
+      
+      setDebugMsg(`Upsert returned. Error: ${profileError?.message || 'none'}`)
+      if (profileError) { 
+        console.error("Profile Save Error:", profileError)
+        toast.error(`Database Error: ${profileError.message || profileError.details || 'Failed to save profile'}`); 
+        setLoading(false); 
+        if (setIsRegistering) setIsRegistering(false);
+        return 
+      }
 
-    setLoading(false)
-    toast.success('Account created successfully! 🎉')
-    onRegistered({ ...form, age, category, role })
+      setDebugMsg('Signup fully complete. Redirecting...')
+      setLoading(false)
+      toast.success('Account created successfully! 🎉')
+      onRegistered({ ...form, age, category, role })
+    } catch (err) {
+      setDebugMsg(`Exception caught: ${err.message}`)
+      console.error("Signup exception:", err)
+      toast.error('An unexpected error occurred. Please try again.')
+      setLoading(false)
+      if (setIsRegistering) setIsRegistering(false)
+    }
   }
 
   const age = form.dob ? new Date().getFullYear() - new Date(form.dob).getFullYear() : null
@@ -230,6 +261,12 @@ function SignUpForm({ onRegistered, setIsRegistering, role }) {
           {loading ? <Spinner /> : step < totalSteps - 1 ? <><span>Next</span><ArrowRight size={15} /></> : <><Sparkles size={15} /><span>Create Account</span></>}
         </button>
       </div>
+      
+      {debugMsg && (
+        <div className="mt-4 p-2 bg-slate-800 rounded text-xs text-blue-300 border border-slate-700 font-mono">
+          System Status: {debugMsg}
+        </div>
+      )}
     </motion.div>
   )
 }

@@ -190,8 +190,8 @@ export default function ChatBot({ user, authUserId }) {
       <div className="p-4 border-b border-white/5 flex-shrink-0">
         <div className="flex items-center gap-3">
           <div className="relative">
-            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center">
-              <Bot size={18} className="text-white" />
+            <div className="w-10 h-10 rounded-full bg-white flex items-center justify-center overflow-hidden border border-white/10 shadow-lg shadow-blue-500/10">
+              <img src="/logo.png" alt="MindWell Logo" className="w-full h-full object-cover" />
             </div>
             <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full bg-green-400 border-2 border-slate-900" />
           </div>
@@ -200,7 +200,14 @@ export default function ChatBot({ user, authUserId }) {
           </div>
           <div className="ml-auto flex items-center gap-2">
             <button 
-              onClick={() => setVoiceMuted(!voiceMuted)} 
+              onClick={() => {
+                const newMutedState = !voiceMuted
+                setVoiceMuted(newMutedState)
+                if (newMutedState && 'speechSynthesis' in window) {
+                  window.speechSynthesis.cancel()
+                  setIsSpeaking(false)
+                }
+              }}
               className={`p-1.5 rounded-lg transition-colors ${voiceMuted ? 'text-red-400 bg-red-500/10' : 'text-blue-400 bg-blue-500/10'}`}
               title={voiceMuted ? "Unmute Voice" : "Mute Voice"}
             >
@@ -227,8 +234,8 @@ export default function ChatBot({ user, authUserId }) {
             <motion.div key={msg.id} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}
               className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'} gap-2`}>
               {msg.role === 'ai' && (
-                <div className="w-7 h-7 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center flex-shrink-0 mt-1">
-                  <Bot size={12} className="text-white" />
+                <div className="w-7 h-7 rounded-full bg-white flex items-center justify-center overflow-hidden flex-shrink-0 mt-1 border border-white/10">
+                  <img src="/logo.png" alt="AI" className="w-full h-full object-cover" />
                 </div>
               )}
               <div className="flex flex-col gap-1 items-start max-w-[80%]">

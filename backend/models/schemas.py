@@ -7,7 +7,7 @@ class AssessmentCreate(BaseModel):
 
 class ChatMessageCreate(BaseModel):
     message: str
-    history: Optional[List[Dict[str, str]]] = []
+    history: Optional[List[Dict[str, Any]]] = []
     language: Optional[str] = "en"
 
 class ChatMessageResponse(BaseModel):

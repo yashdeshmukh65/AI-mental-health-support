@@ -67,9 +67,11 @@ export default function Assessment({ user, authUserId, onComplete }) {
 
       <div className="w-full max-w-lg relative z-10">
         <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="text-center mb-6">
-          <div className="flex items-center justify-center gap-2 mb-2">
-            <Brain size={20} className="text-blue-400" />
-            <span className="text-lg font-bold gradient-text">Wellness Assessment</span>
+          <div className="flex items-center gap-2 mb-8 justify-center">
+            <div className="w-8 h-8 rounded-lg bg-white flex items-center justify-center overflow-hidden">
+              <img src="/logo.png" alt="Logo" className="w-full h-full object-cover" />
+            </div>
+            <span className="font-bold text-lg text-white">MindWell</span>
           </div>
           <p className="text-slate-400 text-sm">Hi {user.name.split(' ')[0]} 👋 — Let's understand your emotional state</p>
         </motion.div>
@@ -151,8 +153,8 @@ function AnalyzingScreen() {
             className="absolute inset-0 rounded-full border-2 border-transparent border-t-blue-500 border-r-purple-500" />
           <motion.div animate={{ rotate: -360 }} transition={{ duration: 3, repeat: Infinity, ease: 'linear' }}
             className="absolute inset-2 rounded-full border-2 border-transparent border-t-teal-400 border-l-blue-400" />
-          <div className="absolute inset-0 flex items-center justify-center">
-            <Brain size={28} className="text-blue-400" />
+          <div className="w-16 h-16 mx-auto rounded-2xl bg-white flex items-center justify-center absolute inset-0 m-auto overflow-hidden shadow-lg shadow-blue-500/20">
+            <img src="/logo.png" alt="Logo" className="w-full h-full object-cover" />
           </div>
         </div>
         <motion.h2 animate={{ opacity: [0.5, 1, 0.5] }} transition={{ duration: 2, repeat: Infinity }}
