@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Star, Clock, CheckCircle, X, Calendar, MessageCircle, Lock, ShieldAlert, ChevronLeft, UserCheck, Loader2 } from 'lucide-react'
-import { getTherapists, getWellnessScore, assignTherapist, getAssignedTherapist } from '../lib/db'
+import { getTherapists, getWellnessScore, assignTherapist, getAssignedTherapist, unassignTherapist } from '../lib/db'
 import UserTherapistChat from './UserTherapistChat'
 
 const MOCK_THERAPISTS = [
@@ -70,6 +70,18 @@ export default function TherapistList({ authUserId }) {
       setSelected(null)
     }
     setAssigning(false)
+  }
+
+  const handleDisconnect = async () => {
+    if (!authUserId) return
+    if (window.confirm("Are you sure you want to disconnect from this therapist?")) {
+      const { error } = await unassignTherapist(authUserId)
+      if (!error) {
+        setAssignedTherapist(null)
+      } else {
+        console.error("Failed to disconnect therapist:", error)
+      }
+    }
   }
 
   if (loading) return (
@@ -167,12 +179,21 @@ export default function TherapistList({ authUserId }) {
 
               <div className="flex gap-2">
                 {isAssigned ? (
-                  <button
-                    onClick={() => setActiveChatTherapist(t)}
-                    className="flex-1 py-2 rounded-xl text-sm font-medium bg-gradient-to-r from-emerald-600 to-teal-600 text-white flex items-center justify-center gap-1 shadow-lg shadow-emerald-500/20"
-                  >
-                    <MessageCircle size={13} /> Chat Now
-                  </button>
+                  <>
+                    <button
+                      onClick={() => setActiveChatTherapist(t)}
+                      className="flex-1 py-2 rounded-xl text-sm font-medium bg-gradient-to-r from-emerald-600 to-teal-600 text-white flex items-center justify-center gap-1 shadow-lg shadow-emerald-500/20 hover:shadow-xl transition-all"
+                    >
+                      <MessageCircle size={13} /> Chat Now
+                    </button>
+                    <button
+                      onClick={handleDisconnect}
+                      className="px-3 py-2 rounded-xl text-sm font-medium bg-red-500/10 text-red-400 hover:bg-red-500/20 hover:text-red-300 transition-colors flex items-center justify-center border border-red-500/20"
+                      title="Disconnect Therapist"
+                    >
+                      <X size={16} />
+                    </button>
+                  </>
                 ) : assignedTherapist ? (
                   <button 
                     disabled

@@ -178,6 +178,9 @@ export async function assignTherapist(userId, therapistId) {
     user_id: userId, therapist_id: therapistId
   }, { onConflict: 'user_id' })
 }
+export async function unassignTherapist(userId) {
+  return await supabase.from('user_therapist_assignment').delete().eq('user_id', userId)
+}
 export async function getAssignedTherapist(userId) {
   const { data, error } = await supabase.from('user_therapist_assignment').select('*, therapists(*)').eq('user_id', userId).single()
   return { data, error }
